@@ -1,0 +1,345 @@
+<html>
+<head>
+<title>MainActivity.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6897bb;}
+.s3 { color: #808080;}
+.s4 { color: #6a8759;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+MainActivity.java</font>
+</center></td></tr></table>
+<pre><span class="s0">package </span><span class="s1">com.example.myapplication</span><span class="s0">;</span>
+
+import <span class="s1">android.Manifest</span><span class="s0">;</span>
+import <span class="s1">android.app.AlertDialog</span><span class="s0">;</span>
+import <span class="s1">android.content.ContentValues</span><span class="s0">;</span>
+import <span class="s1">android.content.DialogInterface</span><span class="s0">;</span>
+import <span class="s1">android.content.Intent</span><span class="s0">;</span>
+import <span class="s1">android.content.pm.PackageManager</span><span class="s0">;</span>
+import <span class="s1">android.graphics.Bitmap</span><span class="s0">;</span>
+import <span class="s1">android.graphics.drawable.BitmapDrawable</span><span class="s0">;</span>
+import <span class="s1">android.net.Uri</span><span class="s0">;</span>
+import <span class="s1">android.provider.MediaStore</span><span class="s0">;</span>
+
+
+import <span class="s1">android.os.Bundle</span><span class="s0">;</span>
+import <span class="s1">android.util.SparseArray</span><span class="s0">;</span>
+import <span class="s1">android.view.Menu</span><span class="s0">;</span>
+import <span class="s1">android.view.MenuItem</span><span class="s0">;</span>
+import <span class="s1">android.view.SurfaceView</span><span class="s0">;</span>
+import <span class="s1">android.widget.ImageView</span><span class="s0">;</span>
+import <span class="s1">android.widget.TextView</span><span class="s0">;</span>
+import <span class="s1">android.widget.Toast</span><span class="s0">;</span>
+
+import <span class="s1">com.google.android.gms.vision.CameraSource</span><span class="s0">;</span>
+import <span class="s1">com.google.android.gms.vision.Frame</span><span class="s0">;</span>
+import <span class="s1">com.google.android.gms.vision.text.TextBlock</span><span class="s0">;</span>
+import <span class="s1">com.google.android.gms.vision.text.TextRecognizer</span><span class="s0">;</span>
+import <span class="s1">com.theartofdev.edmodo.cropper.CropImage</span><span class="s0">;</span>
+import <span class="s1">com.theartofdev.edmodo.cropper.CropImageView</span><span class="s0">;</span>
+
+import <span class="s1">java.util.regex.Matcher</span><span class="s0">;</span>
+import <span class="s1">java.util.regex.Pattern</span><span class="s0">;</span>
+
+import <span class="s1">androidx.annotation.NonNull</span><span class="s0">;</span>
+import <span class="s1">androidx.annotation.Nullable</span><span class="s0">;</span>
+import <span class="s1">androidx.appcompat.app.ActionBar</span><span class="s0">;</span>
+
+
+import <span class="s1">androidx.appcompat.app.AppCompatActivity</span><span class="s0">;</span>
+import <span class="s1">androidx.core.app.ActivityCompat</span><span class="s0">;</span>
+import <span class="s1">androidx.core.content.ContextCompat</span><span class="s0">;</span>
+
+public class <span class="s1">MainActivity </span><span class="s0">extends </span><span class="s1">AppCompatActivity {</span>
+
+    <span class="s0">private static final int </span><span class="s1">CAMERA_REQUEST_CODE = </span><span class="s2">200</span><span class="s0">;</span>
+    private static final int <span class="s1">STORAGE_REQUEST_CODE = </span><span class="s2">400</span><span class="s0">;</span>
+    private static final int <span class="s1">IMAGE_PICK_GALLERY_CODE = </span><span class="s2">1000</span><span class="s0">;</span>
+    private static final int <span class="s1">IMAGE_PICK_CAMERA_CODE = </span><span class="s2">1001</span><span class="s0">;</span>
+
+    <span class="s1">String cameraPermission[]</span><span class="s0">;</span>
+    <span class="s1">String storagePermission[]</span><span class="s0">;</span>
+
+    <span class="s1">TextView mResultEt</span><span class="s0">;</span>
+    <span class="s1">ImageView mPreviewIv</span><span class="s0">;</span>
+
+
+    <span class="s1">Uri image_uri</span><span class="s0">; </span><span class="s3">// zmienna do pobierania obrazów z galerii</span>
+
+    <span class="s1">@Override</span>
+    <span class="s0">protected void </span><span class="s1">onCreate(Bundle savedInstanceState) {</span>
+        <span class="s0">super</span><span class="s1">.onCreate(savedInstanceState)</span><span class="s0">;</span>
+        <span class="s1">setContentView(R.layout.activity_main)</span><span class="s0">;</span>
+
+        <span class="s1">ActionBar actionBar = getSupportActionBar()</span><span class="s0">;</span>
+        <span class="s1">actionBar.setSubtitle(</span><span class="s4">&quot;Click + button to insert image&quot;</span><span class="s1">)</span><span class="s0">;</span>
+
+        <span class="s1">mResultEt = findViewById(R.id.ResultEt)</span><span class="s0">;</span>
+        <span class="s1">mPreviewIv = findViewById(R.id.ImageIv)</span><span class="s0">;</span>
+
+        <span class="s3">// pozwolenie na kamere</span>
+
+
+        <span class="s1">cameraPermission = </span><span class="s0">new </span><span class="s1">String[]{Manifest.permission.CAMERA</span><span class="s0">,</span>
+                    <span class="s1">Manifest.permission.WRITE_EXTERNAL_STORAGE}</span><span class="s0">;</span>
+
+        <span class="s3">// pozwolenie na używanie pamięci</span>
+        <span class="s1">storagePermission = </span><span class="s0">new </span><span class="s1">String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}</span><span class="s0">;</span>
+
+    <span class="s1">}</span>
+
+    <span class="s3">//action bar menu</span>
+
+
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">onCreateOptionsMenu(Menu menu) {</span>
+        getMenuInflater().inflate(R.menu.menu_main<span class="s0">, </span><span class="s1">menu)</span><span class="s0">;</span>
+        return true;
+    <span class="s1">}</span>
+
+    <span class="s3">//obsługa przycisków</span>
+
+
+    <span class="s1">@Override</span>
+    <span class="s0">public boolean </span><span class="s1">onOptionsItemSelected(MenuItem item) {</span>
+        <span class="s0">int </span><span class="s1">id = item.getItemId()</span><span class="s0">;</span>
+        if <span class="s1">(id == R.id.AddImage){</span>
+            showImageImportDialog()<span class="s0">;</span>
+        <span class="s1">}</span>
+
+        <span class="s0">else if </span><span class="s1">(id == R.id.settings){</span>
+
+            Toast.makeText(<span class="s0">this,</span><span class="s4">&quot;settings&quot;</span><span class="s0">, </span><span class="s1">Toast.LENGTH_SHORT).show()</span><span class="s0">;</span>
+        <span class="s1">}</span>
+        <span class="s0">return super</span><span class="s1">.onOptionsItemSelected(item)</span><span class="s0">;</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">showImageImportDialog() {</span>
+        <span class="s3">// rzeczy do wyświetlenia</span>
+        <span class="s1">String[] items = {</span><span class="s4">&quot;Camera&quot;</span><span class="s0">,</span><span class="s4">&quot;Gallery&quot;</span><span class="s1">}</span><span class="s0">;</span>
+        <span class="s1">AlertDialog.Builder dialog = </span><span class="s0">new </span><span class="s1">AlertDialog.Builder(</span><span class="s0">this</span><span class="s1">)</span><span class="s0">;</span>
+        <span class="s3">// tytuł</span>
+        <span class="s1">dialog.setTitle(</span><span class="s4">&quot;Select Image&quot;</span><span class="s1">)</span><span class="s0">;</span>
+        <span class="s1">dialog.setItems(items</span><span class="s0">, new </span><span class="s1">DialogInterface.OnClickListener() {</span>
+            @Override
+            <span class="s0">public void </span><span class="s1">onClick(DialogInterface dialog</span><span class="s0">, int </span><span class="s1">which) {</span>
+                <span class="s0">if</span><span class="s1">(which == </span><span class="s2">0</span><span class="s1">){</span>
+                    <span class="s3">//camera option clicked</span>
+                    //od marshmallow grzecznie sprawdzamy pozwolenie na kamerke
+                    <span class="s0">if</span><span class="s1">(!checkCameraPermission()){</span>
+                        <span class="s3">//brak pozwolenia, wyslij prosbe</span>
+                        <span class="s1">requestCameraPermission()</span><span class="s0">;</span>
+                    <span class="s1">}</span>
+                    <span class="s0">else </span><span class="s1">{</span>
+                        <span class="s3">//pozwolenie, zrob zdjecia</span>
+                        <span class="s1">pickCamera()</span><span class="s0">;</span>
+                    <span class="s1">}</span>
+                }
+                <span class="s0">if </span><span class="s1">(which == </span><span class="s2">1</span><span class="s1">){</span>
+                    <span class="s3">//gallery option clicked</span>
+                    //check permission request for storage
+                    <span class="s0">if</span><span class="s1">(!checkStoragePermission()){</span>
+                        <span class="s3">//brak pozwolenia, wyslij prosbe</span>
+                        <span class="s1">requestStoragePermission()</span><span class="s0">;</span>
+                    <span class="s1">}</span>
+                    <span class="s0">else </span><span class="s1">{</span>
+                        <span class="s3">//pozwolenie, wybierz przedmiot z galerii</span>
+                        <span class="s1">pickGallery()</span><span class="s0">;</span>
+                    <span class="s1">}</span>
+
+                }
+            }
+        })<span class="s0">;</span>
+        <span class="s1">dialog.create().show()</span><span class="s0">; </span><span class="s3">// pokaż dialog</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">pickGallery() {</span>
+<span class="s3">//////         pobieranie obrazu z galerii</span>
+                <span class="s1">Intent intent = </span><span class="s0">new </span><span class="s1">Intent(Intent.ACTION_PICK)</span><span class="s0">;</span>
+<span class="s3">//////         zmiana typu intentu na obrazki</span>
+                <span class="s1">intent.setType(</span><span class="s4">&quot;image/*&quot;</span><span class="s1">)</span><span class="s0">;</span>
+                <span class="s1">startActivityForResult(intent</span><span class="s0">, </span><span class="s1">IMAGE_PICK_GALLERY_CODE)</span><span class="s0">;</span>
+<span class="s3">//</span>
+//
+//            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+//            intent.setType(&quot;image/*&quot;);
+//            startActivityForResult(intent, IMAGE_PICK_GALLERY_CODE);
+
+    <span class="s1">}</span>
+
+    <span class="s0">private void </span><span class="s1">pickCamera() {</span>
+        <span class="s3">// pobieranie obrazu z kamery i zapisywanie do pamieci w celu zwiekszenia jakosci obrazu</span>
+        <span class="s1">ContentValues values = </span><span class="s0">new </span><span class="s1">ContentValues()</span><span class="s0">;</span>
+        <span class="s1">values.put(MediaStore.Images.Media.TITLE</span><span class="s0">, </span><span class="s4">&quot;New picture&quot;</span><span class="s1">)</span><span class="s0">; </span><span class="s3">// tytuł obrazka</span>
+        <span class="s1">values.put(MediaStore.Images.Media.DESCRIPTION</span><span class="s0">, </span><span class="s4">&quot;Skanowany obraz&quot;</span><span class="s1">)</span><span class="s0">; </span><span class="s3">// opis obrazka</span>
+        <span class="s1">image_uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI</span><span class="s0">, </span><span class="s1">values)</span><span class="s0">;</span>
+
+        <span class="s1">Intent cameraIntent = </span><span class="s0">new </span><span class="s1">Intent(MediaStore.ACTION_IMAGE_CAPTURE)</span><span class="s0">;</span>
+
+        <span class="s1">cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT</span><span class="s0">, </span><span class="s1">image_uri)</span><span class="s0">;</span>
+        <span class="s1">startActivityForResult(cameraIntent</span><span class="s0">, </span><span class="s1">IMAGE_PICK_CAMERA_CODE)</span><span class="s0">;</span>
+
+
+    <span class="s1">}</span>
+
+    <span class="s3">// od tej linijki w dół jest sama obsługa androidowych pozwoleń</span>
+    // nie widzę sensu pakowania tego z nowa klase, bo nic tu wiecej nie bedzie robione
+
+    <span class="s0">private void </span><span class="s1">requestStoragePermission() {</span>
+        ActivityCompat.requestPermissions(<span class="s0">this, </span><span class="s1">storagePermission</span><span class="s0">, </span><span class="s1">STORAGE_REQUEST_CODE)</span><span class="s0">;</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private boolean </span><span class="s1">checkStoragePermission() {</span>
+        <span class="s3">// sprawdzenie pozwolenia na korzystanie z pamięci zewnętrznej</span>
+        <span class="s0">boolean </span><span class="s1">result = ContextCompat.checkSelfPermission(</span><span class="s0">this,</span>
+                <span class="s1">Manifest.permission.WRITE_EXTERNAL_STORAGE) == (PackageManager.PERMISSION_GRANTED)</span><span class="s0">;</span>
+        return <span class="s1">result</span><span class="s0">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">// funkcja pobierająca pozwolenie na wykorzystanie kamery</span>
+    <span class="s0">private void </span><span class="s1">requestCameraPermission() {</span>
+        ActivityCompat.requestPermissions(<span class="s0">this, </span><span class="s1">cameraPermission</span><span class="s0">, </span><span class="s1">CAMERA_REQUEST_CODE)</span><span class="s0">;</span>
+    <span class="s1">}</span>
+
+    <span class="s0">private boolean </span><span class="s1">checkCameraPermission() {</span>
+        <span class="s3">// aby skorzystać z obrazu w wyższej jakości musi on zostać zapisany do galerii dlatego jest traktowana na równi z główną kamerą</span>
+        <span class="s0">boolean </span><span class="s1">result = ContextCompat.checkSelfPermission(</span><span class="s0">this,</span>
+                <span class="s1">Manifest.permission.CAMERA) == (PackageManager.PERMISSION_GRANTED)</span><span class="s0">;</span>
+        boolean <span class="s1">result1 = ContextCompat.checkSelfPermission(</span><span class="s0">this,</span>
+                <span class="s1">Manifest.permission.WRITE_EXTERNAL_STORAGE) == (PackageManager.PERMISSION_GRANTED)</span><span class="s0">;</span>
+        return <span class="s1">result &amp;&amp; result1</span><span class="s0">;</span>
+    <span class="s1">}</span>
+
+    <span class="s3">// obsługa pozwolen</span>
+    <span class="s1">@Override</span>
+    <span class="s0">public void </span><span class="s1">onRequestPermissionsResult(</span><span class="s0">int </span><span class="s1">requestCode</span><span class="s0">, </span><span class="s1">@NonNull String[] permissions</span><span class="s0">, </span><span class="s1">@NonNull </span><span class="s0">int</span><span class="s1">[] grantResults) {</span>
+        <span class="s0">switch </span><span class="s1">(requestCode){</span>
+            <span class="s0">case </span><span class="s1">CAMERA_REQUEST_CODE:</span>
+                <span class="s0">if </span><span class="s1">(grantResults.length &gt; </span><span class="s2">0</span><span class="s1">){</span>
+                    <span class="s0">boolean </span><span class="s1">cameraAccepted =grantResults[</span><span class="s2">0</span><span class="s1">] ==</span>
+                            PackageManager.PERMISSION_GRANTED<span class="s0">;</span>
+                    boolean <span class="s1">writeStorageAccepted = grantResults[</span><span class="s2">0</span><span class="s1">]==</span>
+                            PackageManager.PERMISSION_GRANTED<span class="s0">;</span>
+                    if <span class="s1">(cameraAccepted &amp;&amp; writeStorageAccepted){</span>
+                        pickCamera()<span class="s0">;</span>
+                    <span class="s1">}</span>
+                    <span class="s0">else </span><span class="s1">{</span>
+                        Toast.makeText(<span class="s0">this, </span><span class="s4">&quot;permission denied&quot;</span><span class="s0">, </span><span class="s1">Toast.LENGTH_SHORT).show()</span><span class="s0">;</span>
+                    <span class="s1">}</span>
+                }
+                <span class="s0">break;</span>
+
+            case <span class="s1">STORAGE_REQUEST_CODE:</span>
+                <span class="s0">if </span><span class="s1">(grantResults.length &gt; </span><span class="s2">0</span><span class="s1">){</span>
+                    <span class="s0">boolean </span><span class="s1">writeStorageAccepted = grantResults[</span><span class="s2">0</span><span class="s1">]==</span>
+                            PackageManager.PERMISSION_GRANTED<span class="s0">;</span>
+                    if <span class="s1">(writeStorageAccepted){</span>
+                        pickGallery()<span class="s0">;</span>
+                    <span class="s1">}</span>
+                    <span class="s0">else </span><span class="s1">{</span>
+                        Toast.makeText(<span class="s0">this, </span><span class="s4">&quot;permission denied&quot;</span><span class="s0">, </span><span class="s1">Toast.LENGTH_SHORT).show()</span><span class="s0">;</span>
+                    <span class="s1">}</span>
+                }
+                <span class="s0">break;</span>
+        <span class="s1">}</span>
+    }
+
+
+    <span class="s3">//obsługa otrzymanego obrazu</span>
+
+
+    <span class="s1">@Override</span>
+    <span class="s0">protected void </span><span class="s1">onActivityResult(</span><span class="s0">int </span><span class="s1">requestCode</span><span class="s0">, int </span><span class="s1">resultCode</span><span class="s0">, </span><span class="s1">@Nullable Intent data) {</span>
+       <span class="s0">if </span><span class="s1">(resultCode == RESULT_OK){</span>
+           <span class="s0">if</span><span class="s1">(requestCode == IMAGE_PICK_CAMERA_CODE){</span>
+                <span class="s3">// mamy zdjecie z kamery, przycinamy je</span>
+
+//               CropImage.activity(data.getData()).setGuidelines(CropImageView.Guidelines.ON). //
+//                        start(this);
+               <span class="s1">CropImage.activity(image_uri).setGuidelines(CropImageView.Guidelines.ON). </span><span class="s3">// linie pomocnicze</span>
+                       <span class="s1">start(</span><span class="s0">this</span><span class="s1">)</span><span class="s0">;</span>
+           <span class="s1">}</span>
+           <span class="s0">if</span><span class="s1">(requestCode == IMAGE_PICK_GALLERY_CODE){</span>
+               <span class="s3">//mamy obraz z galerii, przycinamy go</span>
+               <span class="s1">CropImage.activity(image_uri).setGuidelines(CropImageView.Guidelines.ON). </span><span class="s3">// linie pomocnicze</span>
+                       <span class="s1">start(</span><span class="s0">this</span><span class="s1">)</span><span class="s0">;</span>
+           <span class="s1">}</span>
+
+       }
+  <span class="s3">//      obrób przyciety obraz</span>
+        <span class="s0">if</span><span class="s1">(requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE){</span>
+            CropImage.ActivityResult result = CropImage.getActivityResult(data)<span class="s0">;</span>
+            if<span class="s1">(resultCode == RESULT_OK){</span>
+
+
+
+                Uri resultUri = result.getUri()<span class="s0">; </span><span class="s3">// link do obrazu</span>
+                //image -&gt; imageView, aka wyświetl
+                <span class="s1">mPreviewIv.setImageURI(resultUri)</span><span class="s0">;</span>
+
+                <span class="s3">// uzyskaj bitmapDrawable do rozpoznawania tekstu</span>
+
+                <span class="s1">BitmapDrawable bitmapDrawable = (BitmapDrawable) mPreviewIv.getDrawable()</span><span class="s0">;</span>
+                <span class="s1">Bitmap bitmap = bitmapDrawable.getBitmap()</span><span class="s0">;</span>
+
+                <span class="s1">TextRecognizer recognizer = </span><span class="s0">new </span><span class="s1">TextRecognizer.Builder(getApplicationContext()).build()</span><span class="s0">;</span>
+
+                if<span class="s1">(!recognizer.isOperational()){</span>
+                    Toast.makeText(<span class="s0">this, </span><span class="s4">&quot;recognition function error&quot;</span><span class="s0">, </span><span class="s1">Toast.LENGTH_SHORT).show()</span><span class="s0">;</span>
+                <span class="s1">}</span>
+                <span class="s0">else </span><span class="s1">{</span>
+                    Frame frame = <span class="s0">new </span><span class="s1">Frame.Builder().setBitmap(bitmap).build()</span><span class="s0">;</span>
+                    <span class="s1">SparseArray&lt;TextBlock&gt; items = recognizer.detect(frame)</span><span class="s0">;</span>
+                    <span class="s1">StringBuilder sb = </span><span class="s0">new </span><span class="s1">StringBuilder()</span><span class="s0">;</span>
+
+                    <span class="s3">//pobieraj rozpoznany tekst, az nic w nim nie bedzie</span>
+                    <span class="s0">for</span><span class="s1">(</span><span class="s0">int </span><span class="s1">i=</span><span class="s2">0</span><span class="s0">; </span><span class="s1">i&lt;items.size()</span><span class="s0">; </span><span class="s1">i++){</span>
+                        TextBlock myItem = items.valueAt(i)<span class="s0">;</span>
+                        <span class="s1">sb.append(myItem.getValue())</span><span class="s0">;</span>
+                        <span class="s1">sb.append(</span><span class="s4">&quot;</span><span class="s0">\n</span><span class="s4">&quot;</span><span class="s1">)</span><span class="s0">;</span>
+                    <span class="s1">}</span>
+                    String regex=<span class="s4">&quot;([0-9]+[,][0-9]+)&quot;</span><span class="s0">;   </span><span class="s3">// wyszukiwanie wzorca liczby przecinkowej</span>
+                    <span class="s1">String regexSuma=</span><span class="s4">&quot;SUMA&quot;</span><span class="s0">;            </span><span class="s3">// wyszukiwanie wyrazu suma, po którym występuje interesujaca nas wartość</span>
+
+                    <span class="s1">String input= sb.toString()</span><span class="s0">;</span>
+
+                    <span class="s1">String output = </span><span class="s0">new </span><span class="s1">String()</span><span class="s0">;</span>
+                    <span class="s1">Pattern pattern=Pattern.compile(regex)</span><span class="s0">;</span>
+                    <span class="s1">Matcher matcher=pattern.matcher(input)</span><span class="s0">;</span>
+
+
+                    while<span class="s1">(matcher.find()  )</span>
+                    {
+
+                        System.out.println(matcher.group())<span class="s0">;</span>
+                        <span class="s1">output = matcher.group()</span><span class="s0">;</span>
+                        break;
+                    <span class="s1">}</span>
+                    <span class="s3">//wyswietl text na ekranie</span>
+
+                    <span class="s1">System.out.print(input)</span><span class="s0">;</span>
+                    <span class="s1">mResultEt.setText(output)</span><span class="s0">;</span>
+                <span class="s1">}</span>
+
+            }
+          <span class="s0">else if</span><span class="s1">(resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {</span>
+                <span class="s3">//w przypadku bledow wyswietl o co chodzi</span>
+               <span class="s1">Exception error = result.getError()</span><span class="s0">;</span>
+               <span class="s1">Toast.makeText(</span><span class="s0">this, </span><span class="s4">&quot;&quot; </span><span class="s1">+ error</span><span class="s0">, </span><span class="s1">Toast.LENGTH_SHORT).show()</span><span class="s0">;</span>
+
+            <span class="s1">}</span>
+        }
+
+   }
+}
+</pre>
+</body>
+</html>
